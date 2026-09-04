@@ -1,0 +1,100 @@
+{{ template "widget-base.html" . }}
+
+{{- define "widget-content" }}
+{{- with .Stats }}
+<div class="process">
+    <div class="process-info">
+        <div class="process-details">
+            <div class="color-highlight size-h3">Glance</div>
+            <div>
+                {{- if .StartedIsOK }}
+                <span {{ dynamicRelativeTimeAttrs .StartedAt }}></span> uptime
+                {{- else }}
+                unknown uptime
+                {{- end }}
+            </div>
+        </div>
+        <div class="shrink-0" data-popover-type="html" data-popover-margin="0.2rem" data-popover-max-width="400px">
+            <div data-popover-html>
+                <div class="flex">
+                    <div class="size-h5">PID</div>
+                    <div class="value-separator"></div>
+                    <div class="color-highlight text-very-compact">{{ .PID }}</div>
+                </div>
+                <div class="flex margin-top-3">
+                    <div class="size-h5">GOROUTINES</div>
+                    <div class="value-separator"></div>
+                    <div class="color-highlight text-very-compact">{{ .Goroutines }}</div>
+                </div>
+            </div>
+            <svg class="process-icon" stroke="var(--color-{{ if .IsAvailable }}positive{{ else }}negative{{ end }})" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z" />
+            </svg>
+        </div>
+    </div>
+    <div class="process-stats">
+        <div class="flex-1{{ if not .IsAvailable }} process-stat-unavailable{{ end }}">
+            <div class="flex justify-between items-end size-h5">
+                <div>CPU</div>
+                <div class="color-highlight text-very-compact">{{ if .IsAvailable }}{{ printf "%.1f" .CPUPercent }} <span class="color-base">%</span>{{ else }}n/a{{ end }}</div>
+            </div>
+            <div{{ if .IsAvailable }} data-popover-type="html"{{ end }}>
+                {{- if .IsAvailable }}
+                <div data-popover-html>
+                    <div class="flex">
+                        <div class="size-h5">{{ if .CPUIsLifetimeAverage }}SINCE START{{ else }}CURRENT{{ end }}</div>
+                        <div class="value-separator"></div>
+                        <div class="color-highlight text-very-compact">{{ printf "%.1f" .CPUPercent }} <span class="color-base size-h5">%</span></div>
+                    </div>
+                    <div class="flex margin-top-3">
+                        <div class="size-h5">OF MACHINE</div>
+                        <div class="value-separator"></div>
+                        <div class="color-highlight text-very-compact">{{ .CPUBarPercent }} <span class="color-base size-h5">%</span></div>
+                    </div>
+                    <div class="margin-top-5 size-h6 color-subdue">100% is one core fully in use.</div>
+                </div>
+                {{- end }}
+                <div class="progress-bar progress-bar-combined">
+                    {{- if .IsAvailable }}
+                    <div class="progress-value{{ if ge .CPUBarPercent 85 }} progress-value-notice{{ end }}" style="--percent: {{ .CPUBarPercent }}"></div>
+                    {{- end }}
+                </div>
+            </div>
+        </div>
+        <div class="flex-1{{ if not .IsAvailable }} process-stat-unavailable{{ end }}">
+            <div class="flex justify-between items-end size-h5">
+                <div>MEMORY</div>
+                <div class="color-highlight text-very-compact">{{ if .IsAvailable }}{{ .MemoryMB | formatServerMegabytes }}{{ else }}n/a{{ end }}</div>
+            </div>
+            <div{{ if .IsAvailable }} data-popover-type="html"{{ end }}>
+                {{- if .IsAvailable }}
+                <div data-popover-html>
+                    <div class="flex">
+                        <div class="size-h5">RESIDENT</div>
+                        <div class="value-separator"></div>
+                        <div class="color-highlight text-very-compact">{{ .MemoryMB | formatServerMegabytes }}</div>
+                    </div>
+                    <div class="flex margin-top-3">
+                        <div class="size-h5">GO HEAP</div>
+                        <div class="value-separator"></div>
+                        <div class="color-highlight text-very-compact">{{ .GoHeapMB | formatServerMegabytes }}</div>
+                    </div>
+                    <div class="flex margin-top-3">
+                        <div class="size-h5">OF MACHINE</div>
+                        <div class="value-separator"></div>
+                        <div class="color-highlight text-very-compact">{{ .MemoryPct }} <span class="color-base size-h5">%</span></div>
+                    </div>
+                    <div class="margin-top-5 size-h6 color-subdue">Resident memory includes heap the Go runtime has freed but not yet returned to the OS.</div>
+                </div>
+                {{- end }}
+                <div class="progress-bar progress-bar-combined">
+                    {{- if .IsAvailable }}
+                    <div class="progress-value{{ if ge .MemoryPct 85 }} progress-value-notice{{ end }}" style="--percent: {{ .MemoryPct }}"></div>
+                    {{- end }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{- end }}
+{{- end }}

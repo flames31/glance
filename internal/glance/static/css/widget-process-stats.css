@@ -1,0 +1,62 @@
+.process {
+    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.process-info {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+.process-details {
+    min-width: 0;
+}
+
+.process-icon {
+    height: 3rem;
+    width: 3rem;
+}
+
+.process-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.process-stat-unavailable {
+    opacity: 0.5;
+}
+
+@container widget (min-width: 650px) {
+    .process {
+        gap: 2rem;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .process-info {
+        flex-direction: row-reverse;
+        justify-content: unset;
+        margin-right: auto;
+        z-index: 1;
+    }
+
+    .process-stats {
+        flex-direction: row;
+        justify-content: right;
+        min-width: 300px;
+        margin-top: 0;
+        gap: 2rem;
+        padding-bottom: 0.8rem;
+        z-index: 1;
+    }
+
+    .process-stats > * {
+        max-width: 200px;
+    }
+}

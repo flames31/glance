@@ -16,6 +16,68 @@
 
 ![](docs/images/readme-main-image.png)
 
+## Additions in this fork
+
+This is a personal fork of [glanceapp/glance](https://github.com/glanceapp/glance) with a few extra
+pieces built on top. Everything below is specific to this fork and will not be found upstream.
+
+### iCal widget
+
+Shows the events happening today from one or more `.ics` calendar feeds, as an agenda. The built-in
+[calendar](docs/configuration.md#calendar) widget draws a month grid and shows no events at all;
+this one fetches real events from a calendar you already use.
+
+```yaml
+- type: ical
+  calendars:
+    - url: ${WORK_CALENDAR_URL}
+      name: Work
+  days: 1
+  limit: 10
+```
+
+The `webcal://` links that calendar apps put behind their "subscribe" buttons work as-is, so you can
+paste one straight in. Recurring events are supported for the common rules — daily, weekly, monthly
+and yearly, with intervals, `COUNT`, `UNTIL`, weekday selection and excluded dates. Anything more
+exotic is skipped rather than guessed at, on the basis that a missing event is less harmful than one
+shown on the wrong day.
+
+[Full documentation →](docs/configuration.md#ical)
+
+### Process Stats widget
+
+Shows the CPU, memory and uptime of **the Glance process itself**. This is the distinction from the
+built-in [server-stats](docs/configuration.md#server-stats) widget, which reports the whole machine —
+`process-stats` answers "how much is Glance costing me?" rather than "how busy is this box?".
+
+```yaml
+- type: process-stats
+```
+
+CPU is reported the way `top` reports it, where 100% means one core fully in use, measured across the
+interval between refreshes rather than averaged over the process's lifetime.
+
+[Full documentation →](docs/configuration.md#process-stats)
+
+### Glance Layout Builder
+
+A standalone drag-and-drop editor for building `glance.yml` files, kept in a separate repository
+alongside this one at `https://github.com/flames31/glance-layout-builder`. Pick widgets from a catalog, arrange them across a
+page's columns, fill in the fields that matter, then copy or download the finished YAML. It also
+carries a theme picker covering every preset in [docs/themes.md](docs/themes.md).
+
+It runs entirely in the browser — no backend, and no running Glance instance required:
+
+```bash
+npm install
+npm run dev
+```
+
+It enforces the same layout rules Glance does, so an arrangement it lets you build is one Glance will
+accept. See that project's own README for details.
+
+<br>
+
 ## Features
 ### Various widgets
 * RSS feeds
@@ -27,6 +89,8 @@
 * Market prices
 * Docker containers status
 * Server stats
+* Calendar events from iCal feeds
+* Glance's own resource usage
 * Custom widgets
 * [and many more...](docs/configuration.md#configuring-glance)
 

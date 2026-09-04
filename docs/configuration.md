@@ -2496,6 +2496,27 @@ The authentication token to use when fetching the statistics.
 ###### `timeout`
 The maximum time to wait for a response from the server. The value is a string and must be a number followed by one of s, m, h, d. Example: `10s` for 10 seconds, `1m` for 1 minute, etc
 
+### Process Stats
+Display the CPU usage, memory usage and uptime of the Glance process itself.
+
+This is deliberately narrower than [Server Stats](#server-stats), which reports the whole machine. Use this one to answer "how much is Glance costing me?" and that one to answer "how busy is this box?".
+
+Example:
+
+```yaml
+- type: process-stats
+```
+
+#### Properties
+This widget takes no properties of its own — it always measures the running Glance process. The [shared properties](#shared-properties) such as `title` and `cache` still apply.
+
+#### Notes
+CPU is shown the way `top` shows it: **100% means one CPU core fully in use**, so a value above 100% is normal on a multi-core machine when several of Glance's goroutines are busy at once. The progress bar underneath is scaled against your machine's total capacity instead, so it stays within 0-100%, and the hover popover shows both figures.
+
+The value is measured across the interval between refreshes rather than averaged over the process's whole lifetime, so it reflects what Glance is doing now. Immediately after startup there is no interval to measure yet, so the first reading is the lifetime average and the popover labels it `SINCE START`.
+
+The memory figure is resident memory (RSS) — what the operating system has actually given Glance, and the same number `ps` and `top` report. The popover additionally shows the Go heap, which is usually smaller: the Go runtime holds on to memory it has freed but not yet returned to the OS, so the two legitimately disagree.
+
 ### Repository
 Display general information about a repository as well as a list of the latest open pull requests and issues.
 
@@ -2777,6 +2798,76 @@ Whether calendar weeks start on Sunday or Monday.
 > [!NOTE]
 >
 > There is currently little customizability available for the calendar. Extra features will be added in the future.
+
+### iCal
+Display the events happening today from one or more iCalendar (`.ics`) feeds, as an agenda.
+
+Unlike the [calendar](#calendar) widget, which draws a month grid and shows no events, this widget fetches real events from a calendar you already use. Most calendar services expose a private `.ics` URL — in Google Calendar it is "Secret address in iCal format" under a calendar's settings, and Nextcloud, Outlook and Apple iCloud all offer an equivalent.
+
+Example:
+
+```yaml
+- type: ical
+  calendars:
+    - url: https://calendar.google.com/calendar/ical/example/private-abc123/basic.ics
+      name: Work
+    - url: https://cloud.example.com/remote.php/dav/public-calendars/xyz?export
+      name: Personal
+  days: 1
+  limit: 10
+```
+
+> [!CAUTION]
+>
+> A calendar's `.ics` URL is a secret — anyone holding it can read your calendar. Use a [config variable](#environment-variables) such as `${WORK_CALENDAR_URL}` rather than writing it into the config file directly.
+
+#### Properties
+
+| Name | Type | Required | Default |
+| ---- | ---- | -------- | ------- |
+| calendars | array | yes | |
+| days | integer | no | 1 |
+| limit | integer | no | 10 |
+| timezone | string | no | the server's timezone |
+| hour-format | string | no | 24h |
+
+##### `days`
+How many days ahead to show, starting from today. The default of `1` shows today only.
+
+##### `limit`
+The maximum number of events to display.
+
+##### `timezone`
+A timezone identifier such as `Europe/London`, used to decide which events count as "today" and to display their times. Defaults to the timezone of the machine Glance is running on. The full list of identifiers can be found [here](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+
+##### `hour-format`
+Whether to show event times in 12 or 24 hour format. Possible values are `12h` and `24h`.
+
+#### Properties for each calendar
+
+| Name | Type | Required | Default |
+| ---- | ---- | -------- | ------- |
+| url | string | yes | |
+| name | string | no | the calendar's own name |
+| headers | key & value | no | |
+
+##### `url`
+The address of the `.ics` feed.
+
+Calendar applications usually publish these as `webcal://` links, which is a subscription convention rather than a real protocol. Such URLs are accepted and fetched over HTTPS, so you can paste a "subscribe" link directly. If your calendar is served over plain HTTP, write the `http://` URL out in full.
+
+##### `name`
+A label shown beside each event, useful when combining several calendars. If not set, the name published by the feed is used.
+
+##### `headers`
+Optional HTTP headers to send when fetching, for feeds behind an authenticating proxy.
+
+#### Recurring events
+The following recurrence rules are supported: `FREQ` of `DAILY`, `WEEKLY`, `MONTHLY` or `YEARLY`, along with `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (weekly only) and `EXDATE`.
+
+Rules outside that set — such as `BYSETPOS`, `BYWEEKNO`, or ordinal weekdays like "the last Friday of the month" — are **not** expanded. Such an event still appears on its original date, but its later occurrences are skipped rather than guessed at, on the basis that a missing event is less harmful than one shown on the wrong day.
+
+Events marked `STATUS:CANCELLED` are never shown. An event already in progress still counts as happening today.
 
 ### Markets
 Display a list of markets, their current value, change for the day and a small 21d chart. Data is taken from Yahoo Finance.

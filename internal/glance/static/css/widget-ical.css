@@ -1,0 +1,32 @@
+.ical-day + .ical-day {
+    margin-top: 1.5rem;
+}
+
+.ical-day-label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.7rem;
+}
+
+.ical-event {
+    display: flex;
+    gap: 1rem;
+    align-items: baseline;
+}
+
+/* Fixed width so titles line up in a column regardless of whether the event is
+   timed or all-day. */
+.ical-event-time {
+    flex-shrink: 0;
+    width: 4.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ical-event-all-day {
+    color: var(--color-text-subdue);
+}
+
+.ical-event-details {
+    min-width: 0;
+    flex: 1;
+}

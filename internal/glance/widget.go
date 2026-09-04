@@ -29,6 +29,8 @@ func newWidget(widgetType string) (widget, error) {
 		w = &calendarWidget{}
 	case "calendar-legacy":
 		w = &oldCalendarWidget{}
+	case "ical":
+		w = &icalWidget{}
 	case "clock":
 		w = &clockWidget{}
 	case "weather":
@@ -79,6 +81,8 @@ func newWidget(widgetType string) (widget, error) {
 		w = &dockerContainersWidget{}
 	case "server-stats":
 		w = &serverStatsWidget{}
+	case "process-stats":
+		w = &processStatsWidget{}
 	case "to-do":
 		w = &todoWidget{}
 	default:

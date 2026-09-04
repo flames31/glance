@@ -4,12 +4,14 @@
 @import "widget-dns-stats.css";
 @import "widget-docker-containers.css";
 @import "widget-group.css";
+@import "widget-ical.css";
 @import "widget-markets.css";
 @import "widget-monitor.css";
 @import "widget-reddit.css";
 @import "widget-releases.css";
 @import "widget-rss.css";
 @import "widget-search.css";
+@import "widget-process-stats.css";
 @import "widget-server-stats.css";
 @import "widget-twitch.css";
 @import "widget-videos.css";

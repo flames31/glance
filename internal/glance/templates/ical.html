@@ -1,0 +1,32 @@
+{{ template "widget-base.html" . }}
+
+{{ define "widget-content" }}
+{{ range .Agenda }}
+<div class="ical-day">
+    <div class="ical-day-label size-h5 color-subdue">{{ .Label }}</div>
+    <ul class="list list-gap-10">
+        {{ range .Events }}
+        <li class="ical-event">
+            <div class="ical-event-time size-h5 color-highlight{{ if .AllDay }} ical-event-all-day{{ end }}">{{ .TimeLabel }}</div>
+            <div class="ical-event-details">
+                {{ if .URL }}
+                <a class="title size-title-dynamic color-primary-if-not-visited" href="{{ .URL }}" target="_blank" rel="noreferrer">{{ .Title }}</a>
+                {{ else }}
+                <div class="title size-title-dynamic">{{ .Title }}</div>
+                {{ end }}
+                <ul class="list-horizontal-text flex-nowrap">
+                    {{ if not .AllDay }}<li {{ dynamicRelativeTimeAttrs .Start }}></li>{{ end }}
+                    {{ if .Location }}<li class="min-width-0"><span class="block text-truncate">{{ .Location }}</span></li>{{ end }}
+                    {{ if .Calendar }}<li class="min-width-0"><span class="block text-truncate">{{ .Calendar }}</span></li>{{ end }}
+                </ul>
+            </div>
+        </li>
+        {{ end }}
+    </ul>
+</div>
+{{ else }}
+<ul class="list">
+    <li>No events {{ if eq .Days 1 }}today{{ else }}in the next {{ .Days }} days{{ end }}</li>
+</ul>
+{{ end }}
+{{ end }}
