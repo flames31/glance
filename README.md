@@ -76,8 +76,6 @@ npm run dev
 It enforces the same layout rules Glance does, so an arrangement it lets you build is one Glance will
 accept. See that project's own README for details.
 
-<br>
-
 ## Features
 ### Various widgets
 * RSS feeds
