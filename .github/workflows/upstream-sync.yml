@@ -1,0 +1,99 @@
+name: Sync with upstream
+
+# Merges glanceapp/glance's main into this fork once a day.
+#
+# This is a merge, not a reset: the fork carries its own commits (the ical and
+# process-stats widgets, pkg/ical, scripts/) and a hard reset to upstream would
+# delete them.
+#
+# Note: the built-in GITHUB_TOKEN is not allowed to push changes under
+# .github/workflows/. If upstream edits its release workflow, the merge here
+# will succeed but the push will be rejected and this job will fail until the
+# merge is done locally and pushed from a machine with normal git credentials.
+
+on:
+  schedule:
+    # 05:00 UTC daily. GitHub runs scheduled jobs on a best-effort basis and
+    # often delays them under load, which does not matter here.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Never let two syncs merge and push at the same time.
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge upstream
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the fork
+        uses: actions/checkout@v4
+        with:
+          # A merge needs real history; the default shallow clone cannot do it.
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/glanceapp/glance.git
+          git fetch --no-tags upstream main
+
+      - name: Check whether there is anything to merge
+        id: check
+        run: |
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "Already up to date with upstream."
+            echo "behind=0" >> "$GITHUB_OUTPUT"
+          else
+            count="$(git rev-list --count HEAD..upstream/main)"
+            echo "Behind upstream by $count commit(s):"
+            git log --oneline --no-decorate "HEAD..upstream/main"
+            echo "behind=$count" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream/main
+        if: steps.check.outputs.behind != '0'
+        run: git merge --no-edit upstream/main
+
+      - name: Set up Go
+        if: steps.check.outputs.behind != '0'
+        uses: actions/setup-go@v5
+        with:
+          # Tracks upstream's Go version bumps rather than pinning one here.
+          go-version-file: go.mod
+          cache: true
+
+      # Gate the push on the merged tree actually working. Upstream changing
+      # widgetBase, mustParseTemplate or the config field types would break this
+      # fork's widgets, and that should surface here rather than on the machine
+      # running the dashboard.
+      - name: Build
+        if: steps.check.outputs.behind != '0'
+        run: go build ./...
+
+      - name: Test
+        if: steps.check.outputs.behind != '0'
+        run: go test ./...
+
+      - name: Push the merge
+        if: steps.check.outputs.behind != '0'
+        run: git push origin HEAD:main
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.check.outputs.behind }}" = "0" ]; then
+            echo "Already in sync with upstream — nothing to do." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Merged ${{ steps.check.outputs.behind }} upstream commit(s) into main." >> "$GITHUB_STEP_SUMMARY"
+          fi
