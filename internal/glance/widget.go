@@ -311,6 +311,11 @@ func (w *widgetBase) canContinueUpdateAfterHandlingErr(err error) bool {
 	if err != nil {
 		w.scheduleEarlyUpdate()
 
+		slog.Error("Widget update failed",
+			"type", w.Type, "title", w.Title, "error", err,
+			"serving_stale", w.ContentAvailable,
+			"retry_in", time.Until(w.nextUpdate).Round(time.Second))
+
 		if !errors.Is(err, errPartialContent) {
 			w.withError(err)
 			w.withNotice(nil)
