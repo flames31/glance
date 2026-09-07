@@ -162,6 +162,7 @@ func (w *videosWidget) fetchYoutubeChannelUploads(channelOrPlaylistIDs []string,
 		}
 
 		request, _ := http.NewRequest("GET", feedURL, nil)
+		setBrowserUserAgentHeader(request)
 		response, err := decodeXmlFromRequest[youtubeFeedResponseXml](defaultHTTPClient, request)
 		if err != nil {
 			cached, ok := w.cachedVideoLists.Load(id)
