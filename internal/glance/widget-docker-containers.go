@@ -162,12 +162,12 @@ func fetchDockerContainers(
 	formatNames bool,
 	labelOverrides map[string]map[string]string,
 ) (dockerContainerList, error) {
-	containers, err := fetchDockerContainersFromSource(socketPath, category, runningOnly, labelOverrides)
+	containers, err := fetchDockerContainersFromSource(socketPath, runningOnly, labelOverrides)
 	if err != nil {
 		return nil, fmt.Errorf("fetching containers: %w", err)
 	}
 
-	containers, children := groupDockerContainerChildren(containers, hideByDefault)
+	containers, children := groupDockerContainerChildren(containers, hideByDefault, category)
 	dockerContainers := make(dockerContainerList, 0, len(containers))
 
 	for i := range containers {
@@ -247,6 +247,7 @@ func deriveDockerContainerName(container *dockerContainerJsonResponse, formatNam
 func groupDockerContainerChildren(
 	containers []dockerContainerJsonResponse,
 	hideByDefault bool,
+	category string,
 ) (
 	[]dockerContainerJsonResponse,
 	map[string][]dockerContainerJsonResponse,
@@ -265,10 +266,18 @@ func groupDockerContainerChildren(
 		parent := container.Labels.getOrDefault(dockerContainerLabelParent, "")
 
 		if !isParent && parent != "" {
+			// Children inherit the category of their parent, so they're not filtered here
 			children[parent] = append(children[parent], *container)
-		} else {
-			parents = append(parents, *container)
+			continue
 		}
+
+		// We have to filter here instead of using the `filters` parameter of Docker's API
+		// because the user may define a category override within their config
+		if category != "" && container.Labels.getOrDefault(dockerContainerLabelCategory, "") != category {
+			continue
+		}
+
+		parents = append(parents, *container)
 	}
 
 	return parents, children
@@ -284,39 +293,21 @@ func isDockerContainerHidden(container *dockerContainerJsonResponse, hideByDefau
 
 func fetchDockerContainersFromSource(
 	source string,
-	category string,
 	runningOnly bool,
 	labelOverrides map[string]map[string]string,
 ) ([]dockerContainerJsonResponse, error) {
-	var hostname string
-	var scheme string
+	var requestBaseURL string
 
 	var client *http.Client
 	if strings.HasPrefix(source, "tcp://") || strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
 		client = &http.Client{}
-		parsed, err := url.Parse(source)
+		var err error
+		requestBaseURL, err = dockerContainersRemoteSourceURL(source)
 		if err != nil {
-			return nil, fmt.Errorf("parsing URL: %w", err)
+			return nil, err
 		}
-
-		scheme = parsed.Scheme
-		if scheme == "tcp" {
-			scheme = "http"
-		}
-
-		port := parsed.Port()
-		if port == "" {
-			if scheme == "https" {
-				port = "443"
-			} else {
-				port = "80"
-			}
-		}
-
-		hostname = parsed.Hostname() + ":" + port
 	} else {
-		scheme = "http"
-		hostname = "docker"
+		requestBaseURL = "http://docker"
 		client = &http.Client{
 			Transport: &http.Transport{
 				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
@@ -330,7 +321,7 @@ func fetchDockerContainersFromSource(
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	request, err := http.NewRequestWithContext(ctx, "GET", scheme+"://"+hostname+"/containers/json?all="+fetchAll, nil)
+	request, err := http.NewRequestWithContext(ctx, "GET", requestBaseURL+"/containers/json?all="+fetchAll, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
@@ -372,21 +363,28 @@ func fetchDockerContainersFromSource(
 		}
 	}
 
-	// We have to filter here instead of using the `filters` parameter of Docker's API
-	// because the user may define a category override within their config
-	if category != "" {
-		filtered := make([]dockerContainerJsonResponse, 0, len(containers))
+	return containers, nil
+}
 
-		for i := range containers {
-			container := &containers[i]
-
-			if container.Labels.getOrDefault(dockerContainerLabelCategory, "") == category {
-				filtered = append(filtered, *container)
-			}
-		}
-
-		containers = filtered
+func dockerContainersRemoteSourceURL(source string) (string, error) {
+	parsed, err := url.Parse(source)
+	if err != nil {
+		return "", fmt.Errorf("parsing URL: %w", err)
 	}
 
-	return containers, nil
+	scheme := parsed.Scheme
+	if scheme == "tcp" {
+		scheme = "http"
+	}
+
+	port := parsed.Port()
+	if port == "" {
+		if scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+
+	return scheme + "://" + net.JoinHostPort(parsed.Hostname(), port), nil
 }
